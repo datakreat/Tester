@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 
 # FastAPI server URL
-BASE_URL = "https://data.kreat.space"  # Update this with your FastAPI server URL
+BASE_URL = "http://localhost:8000"  # Update this with your FastAPI server URL
 
 def main():
     st.title("Problem Analysis Tool")
@@ -110,9 +110,8 @@ def update_title():
 def generate_abstract():
     st.header("Generate Abstract")
     title = st.text_input("Enter the title:")
-    extracted_problem = st.text_area("Enter the extracted problem:")
     if st.button("Generate Abstract"):
-        result = make_request("generate_abstract", {"title": title, "extracted_problem": extracted_problem})
+        result = make_request("generate_abstract", {"title": title})
         if result:
             st.subheader("Response:")
             display_json(result)
