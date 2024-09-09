@@ -171,16 +171,35 @@ def display_db_contents():
     client = MongoClient("mongodb+srv://data:TI18vXaNXBUAkn6T@cluster0.peeh3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")  # Replace with your MongoDB connection string
     db = client["chatbot_database"]  # Access the correct database
 
-    # Sidebar to select session
-    session_ids = db.list_collection_names()
-    selected_session = st.sidebar.selectbox("Select a Session ID", session_ids)
+    # Fetch all session collections and their creation dates
+    session_collections = db.list_collection_names()
+    
+    session_dates = []
+    for session_id in session_collections:
+        session_data = db[session_id].find_one({"session_id": session_id})
+        if session_data:
+            created_at = session_data.get('created_at')
+            if created_at:
+                session_dates.append((session_id, created_at))
 
-    if selected_session:
+    # Sort sessions by creation date in descending order
+    session_dates.sort(key=lambda x: x[1], reverse=True)
+
+    # Create a list of tuples (display_name, session_id)
+    display_sessions = [(f"{id} - {date.strftime('%Y-%m-%d %H:%M:%S')}", id) for id, date in session_dates]
+
+    # Sidebar to select session
+    selected_session_display_name = st.sidebar.selectbox("Select a Session by Date and ID", [s[0] for s in display_sessions])
+    
+    # Extract selected session ID from display name
+    selected_session_id = next(s[1] for s in display_sessions if s[0] == selected_session_display_name)
+
+    if selected_session_id:
         # Fetch the session data
-        session_data = db[selected_session].find_one({"session_id": selected_session})
+        session_data = db[selected_session_id].find_one({"session_id": selected_session_id})
 
         if session_data:
-            st.title(f"Session Details: {selected_session}")
+            st.title(f"Session Details: {selected_session_id}")
 
             # Display session creation date
             created_at = session_data.get('created_at')
@@ -192,7 +211,7 @@ def display_db_contents():
                 st.write("**Created At:** N/A")
 
             updated_at = session_data.get('updated_at')
-            if created_at:
+            if updated_at:
                 # Convert the date to a readable format
                 updated_at = updated_at.strftime('%Y-%m-%d %H:%M:%S')
                 st.write(f"**Updated At:** {updated_at}")
