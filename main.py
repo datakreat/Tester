@@ -1,13 +1,238 @@
 import streamlit as st
 import requests
+from pymongo import MongoClient
+import json
+from datetime import datetime
 
 # FastAPI server URL
 BASE_URL = "https://data.kreat.space"  # Update this with your FastAPI server URL
 
 def main():
-    st.title("Problem Analysis Tool")
+    st.title("Data Kreat Check Tool")
 
     # Sidebar for navigation
+    menu = st.sidebar.radio(
+        "Menu",
+        ["Endpoint Testing", "See History", "See Feedback", "Delete Data"]
+    )
+
+    if menu == "Endpoint Testing":
+        endpoint_testing()
+    elif menu == "See History":
+        display_db_contents()
+    elif menu == "See Feedback":
+        display_feedback()
+    elif menu == "Delete Data":
+        clear_database()
+
+def display_feedback():
+    # Connect to MongoDB
+    uri = "mongodb+srv://data:TI18vXaNXBUAkn6T@cluster0.peeh3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    client = MongoClient(uri)
+    db = client["kreat_feedback"]  # Use the kreat_feedback database
+    feedback_collection = db.feedback  # Use the feedback collection
+
+    # Fetch distinct session IDs from the feedback collection
+    session_ids = feedback_collection.distinct("session_id")
+    
+    if not session_ids:
+        st.warning("No sessions found.")
+        return
+
+    # Let the user select a session ID
+    session_id = st.sidebar.selectbox("Select a Session ID", session_ids)
+
+    # Fetch feedback entries for the selected session
+    feedback_entries = list(feedback_collection.find({"session_id": session_id}))
+
+    if not feedback_entries:
+        st.warning("No feedback found for this session.")
+        return
+
+    # Sort feedback by creation date (if available)
+    feedback_entries.sort(key=lambda x: x.get("created_at", datetime.min), reverse=True)
+
+    # Display feedback in a structured format
+    st.header(f"Feedback for Session ID: {session_id}")
+    
+    for entry in feedback_entries:
+        with st.expander(f"Feedback: {entry.get('feedback_type', 'Unknown')}"):
+
+            # Display creation date if available, else use 'Unknown'
+            created_at = entry.get('created_at', 'Unknown')
+            if isinstance(created_at, datetime):
+                created_at = created_at.strftime("%Y-%m-%d %H:%M:%S")
+            st.write(f"**Date Created:** {created_at}")
+
+            st.write(f"**Feedback Type:** {entry.get('feedback_type', 'N/A')}")
+            st.write(f"**Feedback Message:** {entry.get('feedback', 'No feedback provided')}")
+            st.write(f"**Message Block:** {entry.get('message_block', 'No message block provided')}")
+            st.write(f"**Conversation History:** {entry.get('conversation_history', 'No conversation history')}")
+            
+            st.markdown("---")  # Separator for each feedback entry
+
+def clear_database():
+    # MongoDB connection URIs and databases
+    feedback_uri = "mongodb+srv://data:TI18vXaNXBUAkn6T@cluster0.peeh3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    chatbot_uri = "mongodb+srv://data:TI18vXaNXBUAkn6T@cluster0.peeh3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    
+    # MongoDB Clients and Databases
+    feedback_client = MongoClient(feedback_uri)
+    chatbot_client = MongoClient(chatbot_uri)
+    
+    feedback_db = feedback_client["kreat_feedback"]  # Feedback database
+    chatbot_db = chatbot_client["chatbot_database"]  # Chatbot database
+    
+    # Sidebar for selecting database to clear
+    st.sidebar.header("Database Management")
+    clear_option = st.sidebar.selectbox(
+        "Choose database to clear:",
+        ("Select an option", "Clear Feedback Database", "Clear Chatbot Database")
+    )
+    
+    if clear_option != "Select an option":
+        # Fetch and display rows before clearing
+        st.header("Database Preview")
+        
+        if clear_option == "Clear Feedback Database":
+            collection_names = feedback_db.list_collection_names()
+            st.write("Fetching data from feedback database...")
+            for collection_name in collection_names:
+                st.subheader(f"Collection: {collection_name}")
+                feedback_collection = feedback_db[collection_name]
+                
+                # Fetch the most recent 5 documents based on creation time
+                documents = list(feedback_collection.find().sort("created_at", -1).limit(5))
+                
+                if not documents:
+                    st.write("No documents found in this collection.")
+                else:
+                    for doc in documents:
+                        st.write(f"**Feedback Type:** {doc.get('feedback_type', 'N/A')}")
+                        st.write(f"**Feedback Message:** {doc.get('feedback', 'No feedback provided')}")
+                        st.write(f"**Message Block:** {doc.get('message_block', 'No message block provided')}")
+                        st.write(f"**Conversation History:** {doc.get('conversation_history', 'No conversation history')}")
+                        
+                        # Display creation date
+                        created_at = doc.get('created_at', 'Unknown')
+                        if isinstance(created_at, datetime):
+                            created_at = created_at.strftime("%Y-%m-%d %H:%M:%S")
+                        st.write(f"**Date Created:** {created_at}")
+                        
+                        st.markdown("---")  # Separator for each document
+        
+        elif clear_option == "Clear Chatbot Database":
+            collection_names = chatbot_db.list_collection_names()
+            st.write("Fetching data from chatbot database...")
+            for collection_name in collection_names:
+                st.subheader(f"Collection: {collection_name}")
+                chatbot_collection = chatbot_db[collection_name]
+                
+                # Fetch the most recent 5 documents based on creation time
+                documents = list(chatbot_collection.find().sort("created_at", -1).limit(5))
+                
+                if not documents:
+                    st.write("No documents found in this collection.")
+                else:
+                    for doc in documents:
+                        st.write(f"**Document ID:** {doc.get('_id', 'N/A')}")
+                        st.write(f"**Content:** {doc.get('content', 'No content provided')}")
+                        
+                        # Display creation date
+                        created_at = doc.get('created_at', 'Unknown')
+                        if isinstance(created_at, datetime):
+                            created_at = created_at.strftime("%Y-%m-%d %H:%M:%S")
+                        st.write(f"**Date Created:** {created_at}")
+                        
+                        st.markdown("---")  # Separator for each document
+        
+        # Confirmation to clear database
+        st.header("Confirmation")
+        confirmation = st.checkbox("Are you sure you want to delete the selected database? This action is irreversible!")
+        
+        if confirmation:
+            if st.button("Confirm and Clear Database"):
+                if clear_option == "Clear Feedback Database":
+                    for collection_name in collection_names:
+                        feedback_db[collection_name].drop()  # Drop all collections in kreat_feedback
+                    st.success("Feedback database cleared successfully!")
+                elif clear_option == "Clear Chatbot Database":
+                    for collection_name in collection_names:
+                        chatbot_db[collection_name].drop()  # Drop all collections in chatbot_database
+                    st.success("Chatbot database cleared successfully!")
+        else:
+            st.warning("Please confirm to proceed with clearing the database.")
+    
+    # Instructions
+    st.write("Select the database you'd like to clear from the sidebar, and then confirm on this page.")
+
+def display_db_contents():
+    # MongoDB connection
+    client = MongoClient("mongodb+srv://data:TI18vXaNXBUAkn6T@cluster0.peeh3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")  # Replace with your MongoDB connection string
+    db = client["chatbot_database"]  # Access the correct database
+
+    # Sidebar to select session
+    session_ids = db.list_collection_names()
+    selected_session = st.sidebar.selectbox("Select a Session ID", session_ids)
+
+    if selected_session:
+        # Fetch the session data
+        session_data = db[selected_session].find_one({"session_id": selected_session})
+
+        if session_data:
+            st.title(f"Session Details: {selected_session}")
+
+            # Display session creation date
+            created_at = session_data.get('created_at')
+            if created_at:
+                # Convert the date to a readable format
+                created_at = created_at.strftime('%Y-%m-%d %H:%M:%S')
+                st.write(f"**Created At:** {created_at}")
+            else:
+                st.write("**Created At:** N/A")
+
+            updated_at = session_data.get('updated_at')
+            if created_at:
+                # Convert the date to a readable format
+                updated_at = updated_at.strftime('%Y-%m-%d %H:%M:%S')
+                st.write(f"**Updated At:** {updated_at}")
+            else:
+                st.write("**Updated At:** N/A")
+
+            # Display session fields in an organized manner
+            st.subheader("Problem Details")
+            st.write(f"**Problem:** {session_data.get('PROBLEM', 'N/A')}")
+            st.write(f"**Title:** {session_data.get('TITLE', 'N/A')}")
+            st.write(f"**Abstract:** {session_data.get('ABSTRACT', 'N/A')}")
+            
+            st.subheader("Stakeholders and Classification")
+            st.write(f"**Stakeholders:** {session_data.get('STAKEHOLDERS', 'N/A')}")
+            st.write(f"**Classification:** {session_data.get('CLASSIFICATION', 'N/A')}")
+            
+            st.subheader("Impact and Assumptions")
+            st.write(f"**Problem Impact:** {session_data.get('PROBLEM_IMPACT', 'N/A')}")
+            st.write(f"**Assumptions:** {session_data.get('ASSUMPTIONS', 'N/A')}")
+            
+            st.subheader("Constraints and Risks")
+            st.write(f"**Constraints:** {session_data.get('CONSTRAINTS', 'N/A')}")
+            st.write(f"**Risks:** {session_data.get('RISKS', 'N/A')}")
+            
+            st.subheader("Classification and Description")
+            st.write(f"**Problem Classification:** {session_data.get('PROBLEM_CLASSIFICATION', 'N/A')}")
+            st.write(f"**Detailed Description:** {session_data.get('DETAILED_DESCRIPTION', 'N/A')}")
+            
+            st.subheader("PDB and Problem Landscape")
+            st.write(f"**PDB Suggestion:** {session_data.get('PDB_SUGGESTION', 'N/A')}")
+            st.write(f"**PDB Description:** {session_data.get('PDB_DESCRIPTION', 'N/A')}")
+            st.write(f"**Problem Landscape:** {session_data.get('PROBLEM_LANDSCAPE', 'N/A')}")
+            
+            st.subheader("Function Map and History")
+            st.write(f"**Function Map:** {session_data.get('FUNCTION_MAP', 'N/A')}")
+            st.write(f"**Conversation History:** {display_json(session_data.get('CONVERSATION_HISTORY', 'N/A'))}")
+        else:
+            st.error("No data found for the selected session.")
+
+def endpoint_testing():
     operation = st.sidebar.selectbox(
         "Select Operation",
         ["Generate Title", "Check Title", "Update Title", "Generate Abstract", "Update Abstract",
@@ -60,6 +285,10 @@ def main():
     elif operation == "Function Map":
         function_map()
 
+def other_options():
+    st.header("Other Options")
+    st.write("Additional tools and functionalities can be added here.")
+
 def display_json(data, indent=0):
     if isinstance(data, dict):
         for key, value in data.items():
@@ -78,6 +307,7 @@ def make_request(endpoint, data):
     else:
         st.error(f"Error: {response.status_code} - {response.text}")
         return None
+
 
 def generate_title():
     st.header("Generate Title")
