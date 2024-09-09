@@ -67,7 +67,8 @@ def display_feedback():
             st.write(f"**Feedback Type:** {entry.get('feedback_type', 'N/A')}")
             st.write(f"**Feedback Message:** {entry.get('feedback', 'No feedback provided')}")
             st.write(f"**Message Block:** {entry.get('message_block', 'No message block provided')}")
-            st.write(f"**Conversation History:** {entry.get('conversation_history', 'No conversation history')}")
+            st.write(f"**Conversation History:**")
+            display_conv_hist(entry.get('conversation_history', 'No conversation history'))
             
             st.markdown("---")  # Separator for each feedback entry
 
@@ -162,9 +163,7 @@ def clear_database():
                     st.success("Chatbot database cleared successfully!")
         else:
             st.warning("Please confirm to proceed with clearing the database.")
-    
-    # Instructions
-    st.write("Select the database you'd like to clear from the sidebar, and then confirm on this page.")
+
 
 def display_db_contents():
     # MongoDB connection
@@ -247,9 +246,48 @@ def display_db_contents():
             
             st.subheader("Function Map and History")
             st.write(f"**Function Map:** {session_data.get('FUNCTION_MAP', 'N/A')}")
-            st.write(f"**Conversation History:** {session_data.get('CONVERSATION_HISTORY', 'N/A')}")
+            st.write(f"**Conversation History:**")
+            display_conv_hist(session_data.get('CONVERSATION_HISTORY', 'N/A'))
         else:
             st.error("No data found for the selected session.")
+
+def display_conv_hist(conversation):
+    # Custom CSS for the chat box
+    st.markdown("""
+        <style>
+        .chat-box {
+            background-color: #f1f1f1;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            max-width: 700px;
+            margin: auto;
+        }
+        .user-message {
+            color: #001F5A;
+            font-weight: bold;
+            text-align: left;
+            margin-bottom: 5px;
+        }
+        .assistant-message {
+            color: #198165;
+            text-align: left;
+            margin-bottom: 10px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+
+    # Display conversation history in a box
+    st.markdown('<div class="chat-box">', unsafe_allow_html=True)
+
+    for entry in conversation:
+        if entry['role'] == 'user':
+            st.markdown(f'<div class="user-message">User: {entry["content"]}</div>', unsafe_allow_html=True)
+        else:
+            st.markdown(f'<div class="assistant-message">Assistant: {entry["content"]}</div>', unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
 def endpoint_testing():
     operation = st.sidebar.selectbox(
