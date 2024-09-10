@@ -13,10 +13,10 @@ def main():
     # Sidebar for navigation
     menu = st.sidebar.radio(
         "Menu",
-        ["Endpoint Testing", "See History", "See Feedback", "Delete Data"]
+        ["Endpoint Testing(not updated)", "See History", "See Feedback", "Delete Data"]
     )
 
-    if menu == "Endpoint Testing":
+    if menu == "Endpoint Testing(not updated)":
         endpoint_testing()
     elif menu == "See History":
         display_db_contents()
@@ -246,6 +246,7 @@ def display_db_contents():
             
             st.subheader("Function Map and History")
             st.write(f"**Function Map:** {session_data.get('FUNCTION_MAP', 'N/A')}")
+            st.write(f"**Summary** {session_data.get('SUMMARY', 'N/A')}")
             st.write(f"**Conversation History:**")
             display_conv_hist(session_data.get('CONVERSATION_HISTORY', 'N/A'))
         else:
