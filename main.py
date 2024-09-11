@@ -246,7 +246,8 @@ def display_db_contents():
             
             st.subheader("Function Map and History")
             st.write(f"**Function Map:** {session_data.get('FUNCTION_MAP', 'N/A')}")
-            st.write(f"**Summary** {session_data.get('SUMMARY', 'N/A')}")
+            st.write(f"**Summary:** {session_data.get('SUMMARY', 'N/A')}")
+            st.write(f"**Insights:** {session_data.get('INSIGHTS', 'N/A')}")
             st.write(f"**Conversation History:**")
             display_conv_hist(session_data.get('CONVERSATION_HISTORY', 'N/A'))
         else:
