@@ -74,8 +74,8 @@ def display_feedback():
 
 def clear_database():
     # MongoDB connection URIs and databases
-    feedback_uri = "mongodb+srv://data:TI18vXaNXBUAkn6T@cluster0.peeh3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
-    chatbot_uri = "mongodb+srv://data:TI18vXaNXBUAkn6T@cluster0.peeh3.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+    feedback_uri ="mongodb+srv://kreat:a5PgZPzgcO3wmCpi@kreatcluster.pbtxctd.mongodb.net/?retryWrites=true&w=majority&appName=KreatCluster"
+    chatbot_uri = "mongodb+srv://kreat:a5PgZPzgcO3wmCpi@kreatcluster.pbtxctd.mongodb.net/?retryWrites=true&w=majority&appName=KreatCluster"
     
     # MongoDB Clients and Databases
     feedback_client = MongoClient(feedback_uri)
@@ -235,10 +235,10 @@ def display_db_contents():
             st.write(f"**Constraints:** {session_data.get('CONSTRAINTS', 'N/A')}")
             st.write(f"**Risks:** {session_data.get('RISKS', 'N/A')}")
             
-            st.subheader("Classification and Description")
+            st.subheader("Classification")
             st.write(f"**Problem Classification:** {session_data.get('PROBLEM_CLASSIFICATION', 'N/A')}")
-            st.write(f"**Detailed Description:** {session_data.get('DETAILED_DESCRIPTION', 'N/A')}")
-            
+            st.write(f"**Context Summary:** {session_data.get('CONTEXT_SUMMARY', 'N/A')}")
+
             st.subheader("PDB and Problem Landscape")
             st.write(f"**PDB Suggestion:** {session_data.get('PDB_SUGGESTION', 'N/A')}")
             st.write(f"**PDB Description:** {session_data.get('PDB_DESCRIPTION', 'N/A')}")
@@ -246,6 +246,7 @@ def display_db_contents():
             
             st.subheader("Function Map and History")
             st.write(f"**Function Map:** {session_data.get('FUNCTION_MAP', 'N/A')}")
+            st.write(f"**Real Insights:** {session_data.get('REAL INSIGHTS', 'N/A')}")
             st.write(f"**Summary:** {session_data.get('SUMMARY', 'N/A')}")
             st.write(f"**Insights:** {session_data.get('INSIGHTS', 'N/A')}")
             st.write(f"**Conversation History:**")
